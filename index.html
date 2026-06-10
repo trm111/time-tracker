@@ -248,6 +248,18 @@
 
 <div class="bot-safe"></div>
 
+<!-- SESSION DELETE MODAL -->
+<div class="modal-backdrop" id="session-delete-modal">
+  <div class="modal">
+    <div class="modal-title">기록 삭제</div>
+    <div class="modal-desc">이 기록을 삭제할까요?<br>이 작업은 되돌릴 수 없습니다.</div>
+    <div class="modal-btns">
+      <button onclick="hideSessionDeleteModal()">취소</button>
+      <button class="confirm" onclick="confirmSessionDelete()">확인</button>
+    </div>
+  </div>
+</div>
+
 <!-- DELETE MODAL -->
 <div class="modal-backdrop" id="delete-modal">
   <div class="modal">
@@ -371,7 +383,7 @@ function renderStats(){
   document.getElementById('session-list').innerHTML=sorted.slice(0,30).map(s=>`<div class="session-row">
     <div><div class="session-task"><div class="dot" style="background:${tColor(s.taskId)};width:7px;height:7px"></div>${tName(s.taskId)}</div>
     <div class="session-meta">${dKey(s.start)} ${fmtT(s.start)} ~ ${fmtT(s.end)}</div></div>
-    <div class="session-dur">${fmtHM(s.dur)}</div>
+    <div style="display:flex;align-items:center;gap:6px"><div class="session-dur">${fmtHM(s.dur)}</div><button class="icon-btn danger" onclick="showSessionDeleteModal('${s.id}')" aria-label="세션 삭제"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>
   </div>`).join('')||'<div class="no-data">기록 없음</div>';
 }
 
@@ -429,6 +441,14 @@ function showDeleteModal(){document.getElementById('delete-modal').classList.add
 function hideDeleteModal(){document.getElementById('delete-modal').classList.remove('show');}
 function confirmDelete(){
   S.sessions=[];save();hideDeleteModal();renderStats();renderTracker();
+}
+
+let pendingSessionId=null;
+function showSessionDeleteModal(id){pendingSessionId=id;document.getElementById('session-delete-modal').classList.add('show');}
+function hideSessionDeleteModal(){pendingSessionId=null;document.getElementById('session-delete-modal').classList.remove('show');}
+function confirmSessionDelete(){
+  if(pendingSessionId) S.sessions=S.sessions.filter(s=>s.id!==pendingSessionId);
+  save();hideSessionDeleteModal();renderStats();renderTracker();
 }
 
 function showPage(name){
