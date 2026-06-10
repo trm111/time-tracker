@@ -154,6 +154,17 @@
   .name-edit { flex: 1; font-size: 15px; font-weight: 500; background: transparent; border: none; border-bottom: 1.5px solid var(--accent); color: var(--text); outline: none; padding: 2px 0; }
 
   .no-data { text-align: center; padding: 32px; font-size: 14px; color: var(--text3); }
+
+  /* modal */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: center; justify-content: center; padding: 24px; }
+  .modal-backdrop.show { display: flex; }
+  .modal { background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 24px 20px 20px; width: 100%; max-width: 320px; }
+  .modal-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .modal-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 20px; }
+  .modal-btns { display: flex; gap: 8px; }
+  .modal-btns button { flex: 1; height: 42px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: var(--surface2); color: var(--text2); font-size: 14px; font-weight: 500; cursor: pointer; }
+  .modal-btns button.confirm { background: var(--danger-bg); border-color: rgba(248,113,113,.3); color: var(--danger); }
+  .modal-btns button:active { opacity: .7; }
 </style>
 </head>
 <body>
@@ -201,11 +212,6 @@
         <div class="card-label">세션 기록</div>
         <div id="session-list"></div>
       </div>
-      <div class="export-row">
-        <button class="btn" onclick="exp('csv')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
-        <button class="btn" onclick="exp('json')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> JSON</button>
-        <button class="btn danger" onclick="clearP()"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg> 삭제</button>
-      </div>
     </div>
   </div>
 
@@ -220,11 +226,38 @@
           <button class="add-btn" onclick="addTask()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
         </div>
       </div>
+      <div class="card">
+        <div class="card-label">백업</div>
+        <div class="task-row" style="border-bottom:none">
+          <span class="task-name" style="font-size:14px;font-weight:400">기록 내보내기</span>
+          <button class="btn" style="flex:0;padding:0 14px;height:34px;font-size:13px" onclick="exp('csv')"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
+          <button class="btn" style="flex:0;padding:0 14px;height:34px;font-size:13px" onclick="exp('json')"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> JSON</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">데이터 관리</div>
+        <div class="task-row" style="border-bottom:none">
+          <span class="task-name" style="font-size:14px;font-weight:400">모든 기록 삭제</span>
+          <button class="btn danger" style="flex:0;padding:0 14px;height:34px;font-size:13px" onclick="showDeleteModal()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg> 데이터 삭제</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="bot-safe"></div>
+
+<!-- DELETE MODAL -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal">
+    <div class="modal-title">데이터 삭제</div>
+    <div class="modal-desc">모든 기록 데이터가 삭제됩니다.<br>이 작업은 되돌릴 수 없습니다.</div>
+    <div class="modal-btns">
+      <button onclick="hideDeleteModal()">취소</button>
+      <button class="confirm" onclick="confirmDelete()">확인</button>
+    </div>
+  </div>
+</div>
 
 <!-- TAB BAR -->
 <div class="tab-bar">
@@ -377,25 +410,24 @@ function setP(p){period=p;offset=0;document.querySelectorAll('.seg').forEach((b,
 function nav(d){offset+=d;renderStats();}
 
 function exp(fmt){
-  const ss=getPSessions();
-  if(!ss.length){alert('기간 내 기록이 없습니다');return;}
+  if(!S.sessions.length){alert('내보낼 기록이 없습니다');return;}
   let content,type,ext;
   if(fmt==='csv'){
-    const rows=[['세션ID','태스크','시작','종료','시간(분)'],...ss.map(s=>[s.id,tName(s.taskId),new Date(s.start).toLocaleString('ko-KR'),new Date(s.end).toLocaleString('ko-KR'),Math.round(s.dur/60000)])];
+    const rows=[['세션ID','태스크','시작','종료','시간(분)'],...S.sessions.map(s=>[s.id,tName(s.taskId),new Date(s.start).toLocaleString('ko-KR'),new Date(s.end).toLocaleString('ko-KR'),Math.round(s.dur/60000)])];
     content=rows.map(r=>r.join(',')).join('\n');type='text/csv';ext='csv';
   } else {
-    content=JSON.stringify(ss.map(s=>({id:s.id,task:tName(s.taskId),start:new Date(s.start).toISOString(),end:new Date(s.end).toISOString(),durationMin:Math.round(s.dur/60000)})),null,2);
+    content=JSON.stringify(S.sessions.map(s=>({id:s.id,task:tName(s.taskId),start:new Date(s.start).toISOString(),end:new Date(s.end).toISOString(),durationMin:Math.round(s.dur/60000)})),null,2);
     type='application/json';ext='json';
   }
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([content],{type}));
-  a.download=`time-log-${getPLabel().replace(/[^0-9가-힣]/g,'')}.${ext}`;a.click();
+  a.download=`time-log-${new Date().toISOString().slice(0,10)}.${ext}`;a.click();
 }
 
-function clearP(){
-  if(!confirm(`${getPLabel()} 기록을 모두 삭제할까요?`))return;
-  const ids=new Set(getPSessions().map(s=>s.id));
-  S.sessions=S.sessions.filter(s=>!ids.has(s.id));save();renderStats();
+function showDeleteModal(){document.getElementById('delete-modal').classList.add('show');}
+function hideDeleteModal(){document.getElementById('delete-modal').classList.remove('show');}
+function confirmDelete(){
+  S.sessions=[];save();hideDeleteModal();renderStats();renderTracker();
 }
 
 function showPage(name){
